@@ -29,6 +29,7 @@ SAVE_FILE = "saved.json"
 History = []
 Saved = []
 ConvoHistory = []
+Stream = True
 
 
 def load_saved():
@@ -69,6 +70,19 @@ def extract_json(text: str) -> dict:
     json_text = match.group(0)
     return json.loads(json_text)
 
+def clean_code_output(text):
+    text = text.strip()
+
+    if text.startswith("```python"):
+        text = text[len("```python"):].strip()
+
+    if text.startswith("```"):
+        text = text[len("```"):].strip()
+
+    if text.endswith("```"):
+        text = text[:-3].strip()
+
+    return text
 
 def model(user_request, max_tokens=2000, temperature=0.1, model= ""):
     print(model)
@@ -226,8 +240,246 @@ def model(user_request, max_tokens=2000, temperature=0.1, model= ""):
         "icon": result.get("icon", "")
     }
 
+def get_metadata(user_request, max_tokens=500, temperature=0.1, model=""):
+    global ConvoHistory, getCodeSpace
 
+    URL = "http://localhost:11434/api/generate"
+    history_text = "\n".join(ConvoHistory[-5:])
 
+    SYSTEM = (
+        "You are a desktop assistant metadata generator.\n"
+        "Your job is to classify the user's request and produce a small JSON object.\n\n"
+
+        "OUTPUT RULES:\n"
+        "- Output ONLY valid JSON.\n"
+        "- Do NOT output markdown.\n"
+        "- Do NOT use backticks.\n"
+        "- Do NOT explain anything outside the JSON.\n"
+        "- The JSON must contain exactly these keys: icon, request_name, response, risk.\n\n"
+
+        "JSON FORMAT:\n"
+        "{\n"
+        '  "icon": "emoji icon",\n'
+        '  "request_name": "short task title",\n'
+        '  "response": "short assistant response",\n'
+        '  "risk": "Low"\n'
+        "}\n\n"
+
+        "FIELD RULES:\n"
+        "- icon must be one relevant emoji only, like 🌐, 🖱️, 📝, 📁, 🔍, 🧮, ⚙️, 📸, or 🗑️.\n"
+        "- request_name must NOT include an icon.\n"
+        "- request_name must be maximum 25 characters.\n"
+        "- response must be under 80 characters when possible.\n"
+        "- risk must be only one of these: Low, Medium, or High.\n\n"
+
+        "RISK RULES:\n"
+        "- Low = safe action, like opening a website or app.\n"
+        "- Medium = moving mouse, typing, creating files, or automation.\n"
+        "- High = deleting files, changing system settings, sending emails, or shell commands.\n\n"
+
+        "EXAMPLES:\n"
+        'User request: open google\n'
+        'JSON: {"icon":"🌐","request_name":"Open Google","response":"Opening Google.","risk":"Low"}\n\n'
+
+        'User request: move my mouse to 10 10\n'
+        'JSON: {"icon":"🖱️","request_name":"Move Mouse","response":"Moving mouse to position 10, 10.","risk":"Medium"}\n\n'
+    )
+
+    prompt = (
+        f"System: {SYSTEM}\n"
+        f"Recent history:\n{history_text}\n\n"
+        f"Current Code:\n{getCodeSpace()}\n\n"
+        f"User request: {user_request}\n"
+        "Assistant JSON:\n"
+    )
+
+    response = requests.post(
+        URL,
+        json={
+            "model": model,
+            "prompt": prompt,
+            "stream": False,
+            "format": "json",
+            "options": {
+                "num_predict": max_tokens,
+                "temperature": temperature
+            }
+        },
+        timeout=120
+    )
+
+    response.raise_for_status()
+
+    raw = response.json().get("response", "")
+    result = extract_json(raw)
+
+    return {
+        "icon": result.get("icon", "⚙️"),
+        "request_name": result.get("request_name", "Untitled Request"),
+        "response": result.get("response", "Generating code."),
+        "risk": result.get("risk", "Medium")
+    }
+
+def get_code_stream(user_request, max_tokens=2000, temperature=0.1, model="", on_stream=None):
+    global ConvoHistory, getCodeSpace
+
+    URL = "http://localhost:11434/api/generate"
+    history_text = "\n".join(ConvoHistory[-5:])
+
+    SYSTEM = (
+        "You are a Python code generator for a desktop assistant app.\n"
+        "Your job is to convert the user's request into executable Python code.\n\n"
+
+        "OUTPUT RULES:\n"
+        "- Output ONLY valid Python code.\n"
+        "- Do NOT output JSON.\n"
+        "- Do NOT output markdown.\n"
+        "- Do NOT use backticks.\n"
+        "- Do NOT explain anything.\n"
+        "- Do NOT write text before or after the code.\n"
+        "- The output must be directly executable with exec(code).\n\n"
+
+        "CODE RULES:\n"
+        "- Include all required imports.\n"
+        "- Prefer simple direct solutions over complex multi-step solutions.\n"
+        "- Do not use comments unless they are useful inside the code.\n"
+        "- For general knowledge questions, generate code that opens a Google search.\n"
+        "- Use webbrowser for opening websites.\n"
+        "- Use subprocess.Popen([...]) for opening local applications and files.\n"
+        "- When creating files, directly create and write the file using open(..., 'w').\n"
+        "- When opening created text files, prefer notepad.exe on Windows.\n\n"
+
+        "AVAILABLE PYTHON MODULES:\n"
+        "- pyautogui for mouse, keyboard, screenshots, and automation.\n"
+        "- webbrowser for opening websites.\n"
+        "- subprocess for opening applications and shell commands.\n"
+        "- os and shutil for file and folder management.\n"
+        "- pyperclip for clipboard operations.\n"
+        "- pygetwindow for controlling windows.\n"
+        "- keyboard for keyboard hotkeys and key presses.\n"
+        "- mouse for mouse control and events.\n"
+        "- psutil for system and process information.\n"
+        "- requests for web requests and APIs.\n"
+        "- pillow and cv2 for image processing and screenshots.\n"
+        "- selenium for browser automation.\n\n"
+
+        "EDITING EXISTING CODE RULES:\n"
+        "- If Current Code contains related code, modify that code instead of recreating from scratch.\n"
+        "- If the user asks for more, less, faster, slower, bigger, or smaller, adjust the relevant existing value.\n"
+        "- If the user repeats the same request, apply a stronger change than before.\n\n"
+
+        "EXAMPLES:\n"
+        "User request: open google\n"
+        "Python code:\n"
+        "import webbrowser\n"
+        "webbrowser.open(\"https://www.google.com\")\n\n"
+
+        "User request: move my mouse to 10 10\n"
+        "Python code:\n"
+        "import pyautogui\n"
+        "pyautogui.moveTo(10, 10)\n\n"
+
+        "User request: create a text file on desktop called hello.txt\n"
+        "Python code:\n"
+        "import os\n"
+        "import subprocess\n"
+        "file_path = os.path.expanduser(\"~/Desktop/hello.txt\")\n"
+        "with open(file_path, \"w\") as f:\n"
+        "    f.write(\"Hello World\")\n"
+        "subprocess.Popen([\"notepad.exe\", file_path])\n"
+    )
+
+    prompt = (
+        f"System: {SYSTEM}\n"
+        f"Recent history:\n{history_text}\n\n"
+        f"Current Code:\n{getCodeSpace()}\n\n"
+        f"User request: {user_request}\n"
+        "Python code only:\n"
+    )
+
+    response = requests.post(
+        URL,
+        json={
+            "model": model,
+            "prompt": prompt,
+            "stream": True,
+            "options": {
+                "num_predict": max_tokens,
+                "temperature": temperature
+            }
+        },
+        stream=True,
+        timeout=120
+    )
+
+    response.raise_for_status()
+
+    raw_code = ""
+
+    for line in response.iter_lines():
+        if not line:
+            continue
+
+        data = json.loads(line.decode("utf-8"))
+
+        chunk = data.get("response", "")
+        raw_code += chunk
+
+        if on_stream and chunk:
+            on_stream(chunk)
+
+        if data.get("done", False):
+            break
+
+    return clean_code_output(raw_code)
+
+def model_request(user_request, max_tokens=2000, temperature=0.1, model="", on_code_stream=None):
+    global History, ConvoHistory
+
+    metadata = get_metadata(
+        user_request=user_request,
+        max_tokens=500,
+        temperature=temperature,
+        model=model
+    )
+
+    code = get_code_stream(
+        user_request=user_request,
+        max_tokens=max_tokens,
+        temperature=temperature,
+        model=model,
+        on_stream=on_code_stream
+    )
+
+    try:
+        i = f"{int(History[-1]['ID']) + 1}"
+    except Exception:
+        print("firsthistory?")
+        i = str(len(History))
+
+    History.append({
+        "ID": i,
+        "User": user_request,
+        "request_name": metadata["request_name"],
+        "code": code,
+        "risk": metadata["risk"],
+        "response": metadata["response"],
+        "icon": metadata["icon"]
+    })
+
+    ConvoHistory.append(
+        f"User: {user_request}\n"
+        f"Assistant: {metadata['response']}\n"
+        f"Assistant Provided Code: {code}\n"
+    )
+
+    return {
+        "request_name": metadata["request_name"],
+        "code": code,
+        "risk": metadata["risk"],
+        "response": metadata["response"],
+        "icon": metadata["icon"]
+    }
 
 
 
@@ -249,7 +501,6 @@ def main():
             for item in Saved:
                 if item["ID"] == id:
                     insert_to_CodeBox(item["code"], item["ID"], True)
-
 
     def saved_button(parent, name, saved_id, icon):
         btn = CTkButton(
@@ -385,7 +636,6 @@ def main():
             ChatBox.configure(state="disabled")
             insert_to_ChatBox("bot: Cleared Chat. How can I help you?\n")
 
-
     def send():
         user_text = input_entry.get().strip()
 
@@ -402,26 +652,51 @@ def main():
 
         thread = threading.Thread(
             target=run_model_thread,
-            args=(user_text,),
+            args=(user_text,Stream),
             daemon=True
         )
         thread.start()
 
-    def run_model_thread(user_text):
-        try:
-            result = model(user_text,int(maxTokensEntry.get()), float(temperatureEntry.get()), ModelMenu.get())
-
-            root.after(0, lambda: show_model_result(result))
-
-        except Exception as e:
+    def run_model_thread(user_text, Stream):
+        if Stream:
             try:
-                insert_to_ChatBox(f"bot: Model error, {e}\n")
+                stream_buffer["text"] = ""
+
+                root.after(
+                    0,
+                    lambda: status.configure(
+                        text="●  Status:  Metadata request...",
+                        text_color="#facc15"
+                    )
+                )
+
+                result = model_request(
+                    user_text,
+                    int(maxTokensEntry.get()),
+                    float(temperatureEntry.get()),
+                    ModelMenu.get(),
+                    on_code_stream=stream_to_codebox
+                )
+
+                root.after(0, lambda: show_model_result(result))
+
+            except Exception as e:
+                root.after(0, lambda: insert_to_ChatBox(f"bot: Model error, {e}\n"))
                 root.after(0, lambda: show_model_error(e))
+        else:
+            try:
+                result = model(user_text, int(maxTokensEntry.get()), float(temperatureEntry.get()), ModelMenu.get())
 
-            except:
-                insert_to_ChatBox(f"bot: Model error")
-                root.after(0, lambda: show_model_error("ERROR"))
+                root.after(0, lambda: show_model_result(result))
 
+            except Exception as e:
+                try:
+                    insert_to_ChatBox(f"bot: Model error, {e}\n")
+                    root.after(0, lambda: show_model_error(e))
+
+                except:
+                    insert_to_ChatBox(f"bot: Model error")
+                    root.after(0, lambda: show_model_error("ERROR"))
 
     def execute_command():
 
@@ -514,7 +789,18 @@ def main():
         for child in children:
             child.destroy()
 
+    stream_buffer = {"text": ""}
 
+    def stream_to_codebox(chunk):
+        stream_buffer["text"] += chunk
+
+        def update_box():
+            CodeBox.delete("1.0", END)
+            CodeBox.insert(END, stream_buffer["text"])
+            CodeBox.see("end")
+            highlight_code()
+
+        root.after(0, update_box)
 
 
     root = CTk()
