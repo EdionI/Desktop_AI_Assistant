@@ -25,15 +25,17 @@ import pyperclip
 
 
 SAVE_FILE = "saved.json"
+SETTINGS_FILE = "settings.json"
 
 History = []
 Saved = []
+Settings = []
 ConvoHistory = []
-Stream = True
+Stream = None
 
 
 def load_saved():
-    global Saved
+    global Saved,Settings
 
     if not os.path.exists(SAVE_FILE):
         with open(SAVE_FILE, "w") as f:
@@ -46,15 +48,53 @@ def load_saved():
     except Exception:
         Saved = []
 
-    return Saved
+    if not os.path.exists(SETTINGS_FILE):
+        with open(SETTINGS_FILE, "w") as f:
+            json.dump([], f, indent=4)
+
+    try:
+        with open(SETTINGS_FILE, "r") as f:
+            Settings = json.load(f)
+
+    except Exception:
+        Settings = []
+
+    return Saved, Settings
 
 def update_saved():
     global Saved
     with open("saved.json", "w") as f:
         json.dump(Saved, f, indent=4)
+    with open("settings.json", "w") as f:
+        json.dump(Settings, f, indent=4)
+
+
 
 load_saved()
+print(Settings)
 #print(load_saved())
+
+def get_ollama_models():
+    try:
+        output = subprocess.check_output(
+            ["ollama", "list"],
+            text=True
+        )
+
+        lines = output.strip().split("\n")[1:]
+
+        models = []
+
+        for line in lines:
+            if line.strip():
+                model_name = line.split()[0]
+                models.append(model_name)
+
+        return models
+    except Exception as e:
+        print(e)
+        return ["qwen3:8b"]
+
 
 def extract_json(text: str) -> dict:
     text = text.strip()
@@ -242,6 +282,7 @@ def model(user_request, max_tokens=2000, temperature=0.1, model= ""):
 
 def get_metadata(user_request, max_tokens=500, temperature=0.1, model=""):
     global ConvoHistory, getCodeSpace
+    print(f'getting metadata using {model}')
 
     URL = "http://localhost:11434/api/generate"
     history_text = "\n".join(ConvoHistory[-5:])
@@ -322,6 +363,7 @@ def get_metadata(user_request, max_tokens=500, temperature=0.1, model=""):
 
 def get_code_stream(user_request, max_tokens=2000, temperature=0.1, model="", on_stream=None):
     global ConvoHistory, getCodeSpace
+    print(f'Streaming code using {model}')
 
     URL = "http://localhost:11434/api/generate"
     history_text = "\n".join(ConvoHistory[-5:])
@@ -440,7 +482,7 @@ def model_request(user_request, max_tokens=2000, temperature=0.1, model="", on_c
         user_request=user_request,
         max_tokens=500,
         temperature=temperature,
-        model=model
+        model=Settings[0]["MetadataModel"]
     )
 
     code = get_code_stream(
@@ -658,7 +700,7 @@ def main():
         thread.start()
 
     def run_model_thread(user_text, Stream):
-        if Stream:
+        if Settings[0]["Stream"]:
             try:
                 stream_buffer["text"] = ""
 
@@ -790,7 +832,6 @@ def main():
             child.destroy()
 
     stream_buffer = {"text": ""}
-
     def stream_to_codebox(chunk):
         stream_buffer["text"] += chunk
 
@@ -801,6 +842,87 @@ def main():
             highlight_code()
 
         root.after(0, update_box)
+
+    def open_settings_window():
+        global Settings
+        def save_settings():
+            global Settings
+            setting = {"Stream": bool(StreamingCheckBox.get()), "MetadataModel": MetadataModelEntry.get().strip()}
+
+            Settings[0] = setting
+            update_saved()
+
+            print(Settings)
+            settings_window.destroy()
+
+        settings_window = CTkToplevel(root)
+        settings_window.title("Settings")
+        settings_window.geometry("420x800")
+        settings_window.configure(fg_color="#080d18")
+        # settings_window.resizable(False, False)
+        settings_window.transient(root)
+        settings_window.grab_set()
+        settings_window.focus()
+
+        HeaderFrame = CTkFrame(settings_window, fg_color="#090f1d", width=420, height=50, border_width=1,
+                               border_color="#26324a", corner_radius=0)
+        HeaderFrame.place(x=0, y=0)
+
+        CTkLabel(HeaderFrame, text="⚙  Settings", text_color="#e5e7eb", font=("Segoe UI", 18, "bold")).place(x=18, y=12)
+
+        MainFrame = CTkFrame(settings_window, fg_color="#0d1424", width=380, height=710, border_width=1,
+                             border_color="#26324a", corner_radius=12)
+        MainFrame.place(x=20, y=70)
+
+        CTkLabel(MainFrame, text="General Settings", text_color="#c084fc", font=("Segoe UI", 16, "bold")).place(x=18,y=18)
+
+        SaveBtn = CTkButton(MainFrame, text="Save", width=120, height=36, fg_color="#6d28d9", hover_color="#7c3aed",
+                            border_width=1, border_color="#8b5cf6", text_color="white", font=("Segoe UI", 13, "bold"),
+                            corner_radius=8, command=save_settings)
+        SaveBtn.place(x=110, y=660)
+
+        CloseBtn = CTkButton(MainFrame, text="Close", width=120, height=36, fg_color="#111827", hover_color="#1e1b4b",
+                             border_width=1, border_color="#26324a", text_color="#ddd6fe",
+                             font=("Segoe UI", 13, "bold"), corner_radius=8, command=settings_window.destroy)
+        CloseBtn.place(x=240, y=660)
+
+        # STREAMING CHECKBOX
+        StreamingCheckBox = CTkCheckBox(MainFrame, text="Code Streaming", width=340, height=32, fg_color="#6d28d9",
+                                        hover_color="#7c3aed", border_color="#26324a", checkmark_color="#ffffff",
+                                        text_color="#e5e7eb", font=("Segoe UI", 13, "bold"), corner_radius=6)
+        StreamingCheckBox.place(x=18, y=70)
+        if Settings[0]["Stream"]:
+            StreamingCheckBox.select()
+
+        CTkLabel(MainFrame,
+                 text="Streams generated code live into the CodeBox.\nDisable this if you only want final code after generation.",
+                 width=340, text_color="#64748b", font=("Segoe UI", 11), justify="left", anchor="w").place(x=18, y=110)
+
+        #METADATA Entry
+        CTkLabel(MainFrame, text="Metadata Model", text_color="#94a3b8", font=("Segoe UI", 12, "bold")).place(x=18,y=160)
+
+        MetadataModelEntry = CTkOptionMenu(MainFrame, width=330, height=44, fg_color="#0f172a", button_color="#0f172a",
+            button_hover_color="#1e1b4b", dropdown_fg_color="#0f172a", dropdown_hover_color="#1e1b4b",
+            text_color="#e5e7eb", dropdown_text_color="#e5e7eb", font=("Segoe UI", 14), dropdown_font=("Segoe UI", 13),
+            corner_radius=6)
+
+        MetadataModelEntry.place(x=18, y=185)
+        MetadataModelEntry.configure(values=get_ollama_models())
+        MetadataModelEntry.set(Settings[0]["MetadataModel"])
+        CTkLabel(MainFrame, text="Small model used for title, icon, response and risk.\n"
+                                 "Only relevant when streaming is Enabled.", text_color="#64748b",
+                 font=("Segoe UI", 11),justify="left",anchor="w").place(x=18, y=228)
+
+
+        # MetadataModelEntry = CTkEntry(MainFrame, width=340, height=38, fg_color="#0f172a", border_color="#26324a",
+        #                               border_width=1, corner_radius=8, text_color="#e5e7eb", font=("Segoe UI", 13))
+        # MetadataModelEntry.place(x=18, y=85)
+
+
+        #MetadataModelEntry.insert(0, "qwen2.5:1.5b")
+
+
+
 
 
     root = CTk()
@@ -910,7 +1032,11 @@ def main():
     temperatureEntry.insert(0, "0.1")
 
     ResetBtn = CTkButton(ConfigFrame, text="Clear Chat", width=150, height=36, fg_color="#111827", hover_color="#1e1b4b", border_width=1, border_color="#26324a", text_color="#ddd6fe", font=("Segoe UI", 13, "bold"), command= clear_chat)
-    ResetBtn.place(x=675, y=17)
+    ResetBtn.place(x=610, y=17)
+
+    SettingsBtn = CTkButton(ConfigFrame, text="⚙", width=52, height=36, fg_color="#111827", hover_color="#1e1b4b", border_width=1, border_color="#26324a", text_color="#ddd6fe", font=("Segoe UI", 13, "bold"), command=open_settings_window)
+
+    SettingsBtn.place(x=790, y=17)
 
 
     #CHATFRAME
@@ -1116,6 +1242,8 @@ def main():
 
     ModelMenu.place(x=760, y=62)
     ModelMenu.configure(values= get_ollama_models())
+
+
     ModelMenu.set("qwen3:8b")
 
     show_saved()
