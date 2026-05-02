@@ -1,0 +1,56 @@
+[
+    {
+        "ID": 0,
+        "User": "open netflix",
+        "request_name": "Open Netflix",
+        "code": "import webbrowser\nwebbrowser.open(\"https://www.netflix.com\")",
+        "risk": "Low",
+        "response": "Opening Netflix.",
+        "icon": "\ud83c\udf10"
+    },
+    {
+        "ID": "1",
+        "User": "organize my downloads folder",
+        "request_name": "Organize Downloads",
+        "code": "import os\nimport shutil\nimport glob\ndownloads_path = os.path.expanduser(\"~/Downloads\")\nfor file in glob.glob(os.path.join(downloads_path, \"*\")):\n    if os.path.isfile(file):\n        file_extension = os.path.splitext(file)[1]\n        target_folder = os.path.join(downloads_path, file_extension[1:].upper())\n        os.makedirs(target_folder, exist_ok=True)\n        shutil.move(file, target_folder)",
+        "risk": "Medium",
+        "response": "Organizing downloads folder.",
+        "icon": "\ud83d\uddd1\ufe0f"
+    },
+    {
+        "ID": "2",
+        "User": "Organize my downloads folder",
+        "request_name": "Organize Downloads",
+        "code": "import os\nimport shutil\nfrom pathlib import Path\n\ndownloads_path = Path.home() / 'Downloads'\nif not downloads_path.exists():\n    downloads_path.mkdir(exist_ok=True)\n\n# Define file type categories\nfile_types = {\n    'Images': ['.jpg', '.jpeg', '.png', '.gif', '.bmp'],\n    'Documents': ['.pdf', '.doc', '.docx', '.txt', '.xls', '.xlsx'],\n    'Archives': ['.zip', '.rar', '.7z'],\n    'Videos': ['.mp4', '.avi', '.mov', '.mkv'],\n    'Audio': ['.mp3', '.wav', '.flac']\n}\n\n# Create category folders if they don't exist\nfor category in file_types:\n    category_path = downloads_path / category\n    category_path.mkdir(exist_ok=True)\n\n# Move files into appropriate folders\nfor file in downloads_path.iterdir():\n    if file.is_file():\n        file_ext = file.suffix.lower()\n        for category, extensions in file_types.items():\n            if file_ext in extensions:\n                destination = downloads_path / category / file.name\n                shutil.move(str(file), str(destination))\n                break",
+        "risk": "Medium",
+        "response": "Organizing the downloads folder by moving files into categorized subfolders.",
+        "icon": "\ud83d\uddc2\ufe0f"
+    },
+    {
+        "ID": "3",
+        "User": "no it needs to be faster, and smoother, maybe try a different method?",
+        "request_name": "Move Mouse Faster",
+        "code": "import pyautogui\n\ncurrent_x, current_y = pyautogui.position()\npyautogui.moveTo(current_x + 200, current_y, duration=0.5, tween=pyautogui.easeInOutQuad)",
+        "risk": "Medium",
+        "response": "Moving mouse faster and more smoothly to the right.",
+        "icon": "\ud83d\uddb1\ufe0f"
+    },
+    {
+        "ID": "4",
+        "User": "a bit slower",
+        "request_name": "Move Mouse Slower",
+        "code": "import pyautogui\n\ncurrent_x, current_y = pyautogui.position()\npyautogui.moveTo(current_x + 1600, current_y, duration=1.5, tween=pyautogui.easeInOutQuad)",
+        "risk": "Medium",
+        "response": "Moving mouse further to the right at a slower speed.",
+        "icon": "\ud83d\uddb1\ufe0f"
+    },
+    {
+        "ID": "5",
+        "User": "how to make the bed",
+        "request_name": "Google Search",
+        "code": "import webbrowser\nwebbrowser.open(\"https://www.google.com/search?q=how+to+make+the+bed\")",
+        "risk": "Low",
+        "response": "Searching for how to make the bed.",
+        "icon": "\ud83e\uddfa"
+    }
+]
