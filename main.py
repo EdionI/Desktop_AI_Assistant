@@ -93,7 +93,7 @@ def get_ollama_models():
         return models
     except Exception as e:
         print(e)
-        return ["qwen3:8b"]
+
 
 
 def extract_json(text: str) -> dict:
@@ -1636,29 +1636,7 @@ def main():
 
 
 
-    def get_ollama_models():
-        try:
-            output = subprocess.check_output(
-                ["ollama", "list"],
-                text=True
-            )
 
-            lines = output.strip().split("\n")[1:]
-
-            models = []
-
-            for line in lines:
-                if line.strip():
-                    model_name = line.split()[0]
-                    models.append(model_name)
-
-            return models
-        except Exception as e:
-            print(e)
-            return ["qwen3:8b"]
-
-
-    print(get_ollama_models())
     ModelMenu = CTkOptionMenu(
         root,
         width=330,
@@ -1681,7 +1659,7 @@ def main():
 
 
 
-    ModelMenu.set("qwen3:8b")
+    ModelMenu.set(get_ollama_models()[0])
 
     show_saved()
 
