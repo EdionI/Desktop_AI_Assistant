@@ -617,9 +617,27 @@ def model_request(user_request, max_tokens=2000, temperature=0.1, model="", on_c
 
 
 def main():
-    global History, current_process,Saved, ConvoHistory,getCodeSpace
+    global History, current_process,Saved, ConvoHistory,getCodeSpace,dots
 
     current_process = None
+    dots=0
+
+    def statusAnimation():
+
+        global dots
+
+        if dots < 3:
+            dots+=1
+        else:
+            dots = 1
+        if status.cget("text") == "●  Status:  Running" or status.cget("text") == "●  Status:  Error":
+            status.configure(text=f"{status.cget("text")}".replace('.', ''))
+        else:
+            status.configure(text=f"{status.cget("text")}".replace('.','') + ('.'*dots))
+
+        root.after(250, statusAnimation)
+
+
     def getCodeSpace():
         #print(f"got {CodeBox.get("1.0", "end")}")
         return CodeBox.get("1.0", "end")
@@ -792,6 +810,7 @@ def main():
             ChatBox.configure(state="disabled")
             insert_to_ChatBox("bot: Cleared Chat. How can I help you?\n")
 
+
     def send():
         user_text = input_entry.get().strip()
         CodeBox.Saved_ID = ""
@@ -806,6 +825,7 @@ def main():
 
         send_btn.configure(state="disabled")
         status.configure(text="●  Status:  Generating...", text_color="#facc15")
+
 
         thread = threading.Thread(
             target=run_model_thread,
@@ -1662,6 +1682,7 @@ def main():
     ModelMenu.set(get_ollama_models()[0])
 
     show_saved()
+    statusAnimation()
 
 
 
