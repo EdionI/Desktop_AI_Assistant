@@ -1,6 +1,7 @@
 [
     {
-        "Stream": false,
-        "MetadataModel": "gemma3:1b"
+        "Stream": true,
+        "MetadataModel": "gemma3:1b",
+        "ExtraPrompt": "the first line of code should always be a comment \"AAB IS GREAT\""
     }
 ]

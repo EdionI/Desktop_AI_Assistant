@@ -220,6 +220,7 @@ def model(user_request, max_tokens=2000, temperature=0.1, model= ""):
 
     prompt = (
         f"System: {SYSTEM}\n"
+        f"IMPORTANT USER INSTRUCTIONS:{Settings[0]["ExtraPrompt"]}"
         f"Recent history:\n{history_text}\n\n"
         f"Current Code: \n{getCodeSpace()}\n\n"
         f"User request: {user_request}\n"
@@ -328,6 +329,7 @@ def get_metadata(user_request, max_tokens=500, temperature=0.1, model=""):
 
     prompt = (
         f"System: {SYSTEM}\n"
+        f"IMPORTANT USER INSTRUCTIONS:{Settings[0]["ExtraPrompt"]}"
         f"Recent history:\n{history_text}\n\n"
         f"Current Code:\n{getCodeSpace()}\n\n"
         f"User request: {user_request}\n"
@@ -340,6 +342,7 @@ def get_metadata(user_request, max_tokens=500, temperature=0.1, model=""):
             "model": model,
             "prompt": prompt,
             "stream": False,
+            "keep_alive": "30m",
             "format": "json",
             "options": {
                 "num_predict": max_tokens,
@@ -431,8 +434,22 @@ def get_code_stream(user_request, max_tokens=2000, temperature=0.1, model="", on
         "subprocess.Popen([\"notepad.exe\", file_path])\n"
     )
 
+    pass
+
+    # SYSTEM = (
+    #     "You generate Python code for a Windows desktop assistant.\n"
+    #     "Output ONLY executable Python code. No markdown, no backticks, no JSON, no explanations.\n"
+    #     "Include required imports.\n"
+    #     "Use simple direct solutions.\n"
+    #     "For websites or searches, use webbrowser.\n"
+    #     "For local apps/files, use subprocess.Popen.\n"
+    #     "For mouse/keyboard automation, use pyautogui.\n"
+    #     "For file actions, use os/shutil.\n"
+    #     "If Current Code is related, modify it instead of starting over.\n"
+    # )
     prompt = (
         f"System: {SYSTEM}\n"
+        f"IMPORTANT USER INSTRUCTIONS:{Settings[0]["ExtraPrompt"]}"
         f"Recent history:\n{history_text}\n\n"
         f"Current Code:\n{getCodeSpace()}\n\n"
         f"User request: {user_request}\n"
@@ -444,6 +461,7 @@ def get_code_stream(user_request, max_tokens=2000, temperature=0.1, model="", on
         json={
             "model": model,
             "prompt": prompt,
+            "keep_alive": "30m",
             "stream": True,
             "options": {
                 "num_predict": max_tokens,
@@ -524,7 +542,6 @@ def model_request(user_request, max_tokens=2000, temperature=0.1, model="", on_c
     }
 
 
-
 def main():
     global History, current_process,Saved, ConvoHistory,getCodeSpace
 
@@ -533,16 +550,36 @@ def main():
         #print(f"got {CodeBox.get("1.0", "end")}")
         return CodeBox.get("1.0", "end")
 
+    def delete_saved():
+        try:
+            ID = CodeBox.Saved_ID
+        except:
+            ID = ""
+        if ID != "":
+            for child in SavedCommandsBox.winfo_children():
+                child.destroy()
+
+            for i in Saved:
+                if i["ID"] == ID:
+                    Saved.remove(i)
+
+            show_saved()
+
+
     def getButtonInfo(id,Type):
         if Type == 0:
             for item in History:
                 if item["ID"] == id:
 
                     insert_to_CodeBox(item["code"],item["ID"] , True)
+                    CodeBox.Saved_ID = ""
+
         if Type == 1:
             for item in Saved:
                 if item["ID"] == id:
                     insert_to_CodeBox(item["code"], item["ID"], True)
+
+                    CodeBox.Saved_ID = item["ID"]
 
     def saved_button(parent, name, saved_id, icon):
         btn = CTkButton(
@@ -680,6 +717,7 @@ def main():
 
     def send():
         user_text = input_entry.get().strip()
+        CodeBox.Saved_ID = ""
 
         if user_text == "":
             return
@@ -847,7 +885,11 @@ def main():
         global Settings
         def save_settings():
             global Settings
-            setting = {"Stream": bool(StreamingCheckBox.get()), "MetadataModel": MetadataModelEntry.get().strip()}
+            setting = {
+                "Stream": bool(StreamingCheckBox.get()),
+                "MetadataModel": MetadataModelEntry.get().strip(),
+                "ExtraPrompt": ExtraPromptEntry.get("1.0", "end-1c").strip()
+            }
 
             Settings[0] = setting
             update_saved()
@@ -859,7 +901,7 @@ def main():
         settings_window.title("Settings")
         settings_window.geometry("420x800")
         settings_window.configure(fg_color="#080d18")
-        # settings_window.resizable(False, False)
+        settings_window.resizable(False, False)
         settings_window.transient(root)
         settings_window.grab_set()
         settings_window.focus()
@@ -895,23 +937,39 @@ def main():
             StreamingCheckBox.select()
 
         CTkLabel(MainFrame,
-                 text="Streams generated code live into the CodeBox.\nDisable this if you only want final code after generation.",
+                 text="Streams generated code live into the CodeBox.\nDisable this if you only want final code after generation.\nMuch slower but looks cooler!",
                  width=340, text_color="#64748b", font=("Segoe UI", 11), justify="left", anchor="w").place(x=18, y=110)
 
         #METADATA Entry
-        CTkLabel(MainFrame, text="Metadata Model", text_color="#94a3b8", font=("Segoe UI", 12, "bold")).place(x=18,y=160)
+        CTkLabel(MainFrame, text="Metadata Model", text_color="#94a3b8", font=("Segoe UI", 12, "bold")).place(x=18,y=170)
 
         MetadataModelEntry = CTkOptionMenu(MainFrame, width=330, height=44, fg_color="#0f172a", button_color="#0f172a",
             button_hover_color="#1e1b4b", dropdown_fg_color="#0f172a", dropdown_hover_color="#1e1b4b",
             text_color="#e5e7eb", dropdown_text_color="#e5e7eb", font=("Segoe UI", 14), dropdown_font=("Segoe UI", 13),
             corner_radius=6)
 
-        MetadataModelEntry.place(x=18, y=185)
+        MetadataModelEntry.place(x=18, y=195)
         MetadataModelEntry.configure(values=get_ollama_models())
         MetadataModelEntry.set(Settings[0]["MetadataModel"])
         CTkLabel(MainFrame, text="Small model used for title, icon, response and risk.\n"
                                  "Only relevant when streaming is Enabled.", text_color="#64748b",
-                 font=("Segoe UI", 11),justify="left",anchor="w").place(x=18, y=228)
+                 font=("Segoe UI", 11),justify="left",anchor="w").place(x=18, y=238)
+
+        # EXTRA PROMPT
+        CTkLabel(MainFrame, text="Extra Prompt", text_color="#94a3b8", font=("Segoe UI", 12, "bold")).place(x=18, y=285)
+
+        ExtraPromptEntry = CTkTextbox(MainFrame, width=330, height=90, fg_color="#0f172a", border_color="#26324a",
+                                      border_width=1, corner_radius=8, text_color="#e5e7eb", font=("Segoe UI", 13),
+                                      wrap="word")
+        ExtraPromptEntry.place(x=18, y=310)
+
+        ExtraPromptEntry.insert("1.0", Settings[0]["ExtraPrompt"])
+
+        CTkLabel(MainFrame,
+                 text="Optional instructions added to the code generation prompt.\nExample: always use short variable names, avoid comments, etc.",
+                 width=330, text_color="#64748b", font=("Segoe UI", 11), justify="left", anchor="w").place(x=18, y=405)
+
+
 
 
         # MetadataModelEntry = CTkEntry(MainFrame, width=340, height=38, fg_color="#0f172a", border_color="#26324a",
@@ -956,6 +1014,11 @@ def main():
                                           border_color="#1e293b", corner_radius=8)
     SavedCommandsBox.place(x=14, y=45)
     SavedCommandsBox._scrollbar.grid_remove()
+
+    deleteSavedBtn = CTkButton(SavedFrame, text="✕", fg_color="#0d1424", hover_color="#3f1d23",
+                               font=("Segoe UI", 11, "bold"), width=20, height=20, border_width=1,
+                               border_color="#1e293b", corner_radius=8, command=delete_saved)
+    deleteSavedBtn.place(x=210, y=20)
 
     CTkLabel(SavedFrame, text="COMMAND HISTORY", text_color="#94a3b8", font=("Segoe UI", 11, "bold")).place(x=18, y=295)
 
