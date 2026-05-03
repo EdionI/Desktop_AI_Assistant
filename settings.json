@@ -1,11 +1,11 @@
 [
     {
-        "Stream": true,
+        "Stream": false,
         "MetadataModel": "llama3.2:latest",
-        "ExtraPrompt": "the first line of code should always be a comment \"AAB IS GREAT\"",
+        "ExtraPrompt": "Make Sure to add comments to each line of code explaining what the specific line does!!",
         "Cloud": false,
         "CloudURL": "https://generativelanguage.googleapis.com/v1beta/models/",
         "CloudAPIKey": "AIzaSyAHtErUTi9KldZzkyxRToQHX3bT0_rcLlI",
-        "CloudModel": "Gemma 3 12B IT"
+        "CloudModel": "Gemini 3.1 Flash Lite preview"
     }
 ]

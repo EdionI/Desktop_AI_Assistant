@@ -1,1 +1,65 @@
-[]
+[
+    {
+        "ID": 0,
+        "User": "move 20 30",
+        "request_name": "Move Mouse",
+        "code": "# AAB IS GREAT\nimport pyautogui\npyautogui.moveTo(20, 30)",
+        "risk": "Medium",
+        "response": "Moving mouse to position 20, 30.",
+        "icon": "\ud83d\uddb1\ufe0f"
+    },
+    {
+        "ID": "1",
+        "User": "organize downloads folder first by size then in the size category organize them by filecategory",
+        "request_name": "Organize Downloads",
+        "code": "# AAB IS GREAT\nimport os\nimport shutil\nfrom pathlib import Path\n\ndownloads_path = Path.home() / \"Downloads\"\nfiles = [f for f in downloads_path.iterdir() if f.is_file()]\n\n# Sort by size\nfiles.sort(key=lambda f: f.stat().st_size, reverse=True)\n\nfor file in files:\n    category = file.suffix.lower().replace(\".\", \"\") or \"no_extension\"\n    target_dir = downloads_path / category\n    target_dir.mkdir(exist_ok=True)\n    shutil.move(str(file), str(target_dir / file.name))",
+        "risk": "Medium",
+        "response": "Organizing your downloads folder by size and file category.",
+        "icon": "\ud83d\udcc1"
+    },
+    {
+        "ID": "2",
+        "User": "show me my systems info via tkinter",
+        "request_name": "System Info",
+        "code": "import tkinter as tk\nimport psutil\n\nroot = tk.Tk()\nlabel = tk.Label(root, text=\"System Information:\")\nlabel.pack()\n\ntk.Label(root, text=\"CPU:\").pack()\ntk.Label(root, text=str(psutil.cpu_count())).pack()\n\ntk.Label(root, text=\"Memory:\").pack()\ntk.Label(root, text=f\"{psutil.virtual_memory().total / (1024.0 **3):.2f} GB\").pack()\n\ntk.Label(root, text=\"Disk:\").pack()\ntk.Label(root, text=f\"{psutil.disk_usage('/').total / (1024.0 **3):.2f} GB\").pack()\n\nroot.mainloop()",
+        "risk": "Low",
+        "response": "Displaying system info via tkinter.",
+        "icon": "\ud83d\uddb1\ufe0f"
+    },
+    {
+        "ID": "3",
+        "User": "make the title Alert Tkinter, code should be the same.",
+        "request_name": "Update Tkinter Alert",
+        "code": "# AAB IS GREAT\nimport tkinter as tk\nfrom tkinter import messagebox\n\nroot = tk.Tk()\nroot.withdraw()\n\nmessagebox.showinfo(\n    \"Alert Tkinter\",\n    \"fix streaming by prompting it to separate code, when it detects that separation it starts displaying/streaming it in the codebox and when fully done it does what it already does\"\n)\n\nroot.destroy()",
+        "risk": "Low",
+        "response": "Updating the alert title as requested.",
+        "icon": "\u2699\ufe0f"
+    },
+    {
+        "ID": "4",
+        "User": "open notepad make sure its focused and type on it \"you are dumb\"",
+        "request_name": "Open Notepad",
+        "code": "# AAB IS GREAT\nimport pyautogui\nimport time\nimport subprocess\nsubprocess.Popen([\"notepad.exe\"]) \npyautogui.hotkey('win', 'd')\ntime.sleep(1)\npyautogui.write(\"you are dumb\")",
+        "risk": "Medium",
+        "response": "Opening Notepad and typing 'you are dumb'",
+        "icon": "\ud83d\udcdd"
+    },
+    {
+        "ID": "5",
+        "User": "my windows os been feeling off lately could u repair it?",
+        "request_name": "Repair Windows OS",
+        "code": "import subprocess\n# Run the System File Checker tool to scan and repair system files\n# The command requires administrative privileges to execute successfully\nsubprocess.Popen([\"sfc\", \"/scannow\"])",
+        "risk": "High",
+        "response": "Running the system file checker to repair your Windows OS.",
+        "icon": "\u2699\ufe0f"
+    },
+    {
+        "ID": "6",
+        "User": "wait longer for terminal to load",
+        "request_name": "Adjust Load Delay",
+        "code": "import pyautogui\nimport time\n# Press the Windows key to open the start menu\npyautogui.press('win')\n# Wait for the menu to open\ntime.sleep(1)\n# Type the command into the search bar\npyautogui.write('cmd')\n# Wait for search results\ntime.sleep(1)\n# Press Enter to open Command Prompt\npyautogui.press('enter')\n# Wait longer for the terminal to load\ntime.sleep(3)\n# Type the system file checker command\npyautogui.write('sfc /scannow')\n# Press Enter to execute the repair process\npyautogui.press('enter')",
+        "risk": "Medium",
+        "response": "Increasing the wait time for the terminal to load.",
+        "icon": "\u2699\ufe0f"
+    }
+]

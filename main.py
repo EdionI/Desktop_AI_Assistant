@@ -1,5 +1,4 @@
 import multiprocessing
-import json
 from customtkinter import *
 import requests
 import json
@@ -8,6 +7,9 @@ import keyword
 import re
 import subprocess
 import pyperclip
+
+# CODE GOOD TO KNOWS
+
 # "#080d18"  # background
 # "#0d1424"  # big panels
 # "#111a2e"  # cards/front panels
@@ -172,7 +174,6 @@ def ask_gemini_json(prompt, api_key, cloud_url, max_tokens=2000, temperature=0.1
 def model(user_request, max_tokens=2000, temperature=0.1, model= ""):
     print(model)
     global History,ConvoHistory,getCodeSpace
-    #MODEL = "hf.co/mradermacher/DeepSeek-R1-Distill-Qwen-7B-Uncensored-i1-GGUF:latest" "llama3.1" "qwen3"
     SYSTEM = (
         "You are a Python code generator for a desktop assistant app.\n"
         "Your job is to convert the user's request into a structured JSON response.\n\n"
@@ -1016,7 +1017,7 @@ def main():
         settings_window.title("Settings")
         settings_window.geometry("420x620")
         settings_window.configure(fg_color="#080d18")
-        # settings_window.resizable(False, False)
+        settings_window.resizable(False, False)
         settings_window.transient(root)
         settings_window.grab_set()
         settings_window.focus()
@@ -1388,7 +1389,7 @@ def main():
     )
     HeaderFrame.place(y=0, x=0)
 
-    CTkLabel(HeaderFrame,text="🤖 BOT HELPER",font= ('bold', 18,'bold')).place(x=10, y=10)
+    CTkLabel(HeaderFrame,text="BOT HELPER",font= ('bold', 18,'bold')).place(x=10, y=10)
 
     SavedFrame = CTkFrame(root, fg_color="#0d1424", width=250, height=630, border_width=1, border_color="#26324a",
                           corner_radius=0)
@@ -1429,20 +1430,10 @@ def main():
     )
     ClearHistoryBtn.place(x=20, y=575)
 
-
-
-    #saved_button(SavedCommandsBox, "🌐  Open Google")
-
-
-    #history_button(HistoryBox, "move mouse")
-
-
-
     RightBorder = CTkFrame(
         SavedFrame,
         width=2,
         height=230,
-        #fg_color="#1e293b"
         fg_color = "#1e293b"
     )
     RightBorder.place(x=230, y=50)
@@ -1451,7 +1442,6 @@ def main():
         SavedFrame,
         width=2,
         height=230,
-        #fg_color="#1e293b"
         fg_color = "#1e293b"
     )
 
@@ -1460,11 +1450,11 @@ def main():
     #CONFIGFRAME
     ConfigFrame = CTkFrame(
         root,
-        fg_color="#0d1424",  # front panel color
+        fg_color="#0d1424",
         width=860,
         height=70,
         border_width=1,
-        border_color="#26324a",  # subtle border
+        border_color="#26324a",
         corner_radius=12
     )
     ConfigFrame.place(y=120, x=260)
@@ -1490,11 +1480,11 @@ def main():
 
     #CHATFRAME
     ChatFrame = CTkFrame(root,
-        fg_color="#0d1424",  # front panel color
+        fg_color="#0d1424",
         width=425,
         height=390,
         border_width=1,
-        border_color="#26324a",  # subtle border
+        border_color="#26324a",
         corner_radius=12
     )
     ChatFrame.place(y=200, x=260)
@@ -1536,11 +1526,11 @@ def main():
 
     CodeFrame = CTkFrame(
         root,
-        fg_color="#0d1424",  # front panel color
+        fg_color="#0d1424",
         width=425,
         height=390,
         border_width=1,
-        border_color="#26324a",  # subtle border
+        border_color="#26324a",
         corner_radius=12
     )
     CodeFrame.place(y=200, x=695)
@@ -1608,11 +1598,11 @@ def main():
 
     inputFrame = CTkFrame(
         root,
-        fg_color="#0d1424",  # front panel color
+        fg_color="#0d1424",
         width=860,
         height=70,
         border_width=1,
-        border_color="#26324a",  # subtle border
+        border_color="#26324a",
         corner_radius=12
     )
     inputFrame.place(y=600, x=260)
@@ -1678,14 +1668,10 @@ def main():
     CTkLabel(root,text="Local Model: ",text_color="#94a3b8", font=("Segoe UI", 16, "bold")).place(x=650, y=70)
 
 
-
     ModelMenu.set(get_ollama_models()[0])
 
     show_saved()
     statusAnimation()
-
-
-
 
 
     root.mainloop()

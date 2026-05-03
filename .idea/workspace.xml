@@ -4,9 +4,10 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="6010a8bc-5436-411b-914a-f4e07061f3b5" name="Changes" comment="get models was twice, and removed specidfic model being selected by default">
+    <list default="true" id="6010a8bc-5436-411b-914a-f4e07061f3b5" name="Changes" comment="Animate status.">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/main.py" beforeDir="false" afterPath="$PROJECT_DIR$/main.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/saved.json" beforeDir="false" afterPath="$PROJECT_DIR$/saved.json" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/settings.json" beforeDir="false" afterPath="$PROJECT_DIR$/settings.json" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
@@ -234,7 +235,15 @@
       <option name="project" value="LOCAL" />
       <updated>1777780845718</updated>
     </task>
-    <option name="localTasksCounter" value="9" />
+    <task id="LOCAL-00009" summary="Animate status.">
+      <option name="closed" value="true" />
+      <created>1777782373094</created>
+      <option name="number" value="00009" />
+      <option name="presentableId" value="LOCAL-00009" />
+      <option name="project" value="LOCAL" />
+      <updated>1777782373094</updated>
+    </task>
+    <option name="localTasksCounter" value="10" />
     <servers />
   </component>
   <component name="VcsManagerConfiguration">
@@ -245,7 +254,8 @@
     <MESSAGE value="+ added google ai cloud based option&#10;++ and alot of other random features." />
     <MESSAGE value="Changed: Settings window is now much more space efficient having a scrollable frame." />
     <MESSAGE value="get models was twice, and removed specidfic model being selected by default" />
-    <option name="LAST_COMMIT_MESSAGE" value="get models was twice, and removed specidfic model being selected by default" />
+    <MESSAGE value="Animate status." />
+    <option name="LAST_COMMIT_MESSAGE" value="Animate status." />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>
