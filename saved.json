@@ -61,5 +61,14 @@
         "risk": "Medium",
         "response": "Increasing the wait time for the terminal to load.",
         "icon": "\u2699\ufe0f"
+    },
+    {
+        "ID": "7",
+        "User": "move to 50 50, but move the cursor slowly",
+        "request_name": "Move Mouse Slowly",
+        "code": "import pyautogui\n# Move the mouse to coordinates 50, 50 over a duration of 5 seconds to ensure slow movement\npyautogui.moveTo(50, 50, duration=5)",
+        "risk": "Medium",
+        "response": "Moving the cursor to 50, 50 slowly.",
+        "icon": "\ud83d\uddb1\ufe0f"
     }
 ]

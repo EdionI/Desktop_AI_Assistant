@@ -28,17 +28,18 @@ import pyperclip
 
 SAVE_FILE = "saved.json"
 SETTINGS_FILE = "settings.json"
-
+KEY_FILE = "secret.json"
 History = []
 Saved = []
 Settings = []
+APIKey = []
 ConvoHistory = []
 Stream = None
 
 
 def load_saved():
-    global Saved,Settings
-
+    global Saved,Settings,APIKey
+    #SAVED COMMANDS
     if not os.path.exists(SAVE_FILE):
         with open(SAVE_FILE, "w") as f:
             json.dump([], f, indent=4)
@@ -49,7 +50,7 @@ def load_saved():
 
     except Exception:
         Saved = []
-
+    #SETTINGS
     if not os.path.exists(SETTINGS_FILE):
         with open(SETTINGS_FILE, "w") as f:
             json.dump([], f, indent=4)
@@ -60,20 +61,33 @@ def load_saved():
 
     except Exception:
         Settings = []
+    #API KEY
+    if not os.path.exists(KEY_FILE):
+        with open(KEY_FILE, "w") as f:
+            json.dump([], f, indent=4)
 
-    return Saved, Settings
+    try:
+        with open(KEY_FILE, "r") as f:
+            APIKey = json.load(f)
+
+    except Exception:
+        APIKey = []
+
+    return Saved, Settings,APIKey
 
 def update_saved():
-    global Saved
     with open("saved.json", "w") as f:
         json.dump(Saved, f, indent=4)
     with open("settings.json", "w") as f:
         json.dump(Settings, f, indent=4)
+    with open("secret.json", "w") as f:
+        json.dump(APIKey, f, indent=4)
+
 
 
 
 load_saved()
-print(Settings)
+#print(Settings)
 #print(load_saved())
 
 def get_ollama_models():
@@ -285,7 +299,7 @@ def model(user_request, max_tokens=2000, temperature=0.1, model= ""):
 
         raw = ask_gemini_json(
             prompt=prompt,
-            api_key=Settings[0]["CloudAPIKey"],
+            api_key=APIKey[0]["CloudAPIKey"],
             cloud_url=generateurl(),
             max_tokens=max_tokens,
             temperature=temperature
@@ -992,21 +1006,22 @@ def main():
 
 
     def open_settings_window():
-        global Settings
+        global Settings,APIKey
 
         def save_settings():
-            global Settings
+            global Settings,APIKey
             setting = {
                 "Stream": bool(StreamingCheckBox.get()),
                 "MetadataModel": MetadataModelEntry.get().strip(),
                 "ExtraPrompt": ExtraPromptEntry.get("1.0", "end-1c").strip(),
                 "Cloud": bool(CloudCheckBox.get()),
                 "CloudURL": CloudUrlEntry.get().strip(),
-                "CloudAPIKey": CloudApiKeyEntry.get().strip(),
                 "CloudModel": CloudModelEntry.get().strip()
             }
+            key ={"CloudAPIKey": CloudApiKeyEntry.get().strip()}
 
             Settings[0] = setting
+            APIKey[0]=key
             update_saved()
             chat_type_label_update()
 
@@ -1263,7 +1278,7 @@ def main():
         CloudApiKeyEntry.grid(row=row, column=0, padx=12, pady=(0, 8), sticky="w")
         row += 1
 
-        CloudApiKeyEntry.insert(0, Settings[0]["CloudAPIKey"])
+        CloudApiKeyEntry.insert(0, APIKey[0]["CloudAPIKey"])
 
         CTkLabel(
             MainFrame,
