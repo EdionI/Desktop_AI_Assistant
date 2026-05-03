@@ -124,14 +124,55 @@ def clean_code_output(text):
 
     return text
 
+def ask_gemini_json(prompt, api_key, cloud_url, max_tokens=2000, temperature=0.1):
+    response = requests.post(
+        cloud_url,
+        headers={
+            "Content-Type": "application/json",
+            "X-goog-api-key": api_key.strip()
+        },
+        json={
+            "contents": [
+                {
+                    "parts": [
+                        {
+                            "text": prompt
+                        }
+                    ]
+                }
+            ],
+            "generationConfig": {
+                "temperature": temperature,
+                "maxOutputTokens": max_tokens
+            }
+        },
+        timeout=120
+    )
+
+    if not response.ok:
+        print("Gemma/Gemini API error:")
+        print("Status:", response.status_code)
+        print("Response:", response.text)
+
+    response.raise_for_status()
+
+    data = response.json()
+
+    parts = data["candidates"][0]["content"]["parts"]
+
+    final_text = ""
+
+    for part in parts:
+        if part.get("thought"):
+            continue
+
+        final_text += part.get("text", "")
+
+    return final_text
 def model(user_request, max_tokens=2000, temperature=0.1, model= ""):
     print(model)
     global History,ConvoHistory,getCodeSpace
     #MODEL = "hf.co/mradermacher/DeepSeek-R1-Distill-Qwen-7B-Uncensored-i1-GGUF:latest" "llama3.1" "qwen3"
-    URL = "http://localhost:11434/api/generate"
-    history_text = "\n".join(ConvoHistory[-5:])
-
-
     SYSTEM = (
         "You are a Python code generator for a desktop assistant app.\n"
         "Your job is to convert the user's request into a structured JSON response.\n\n"
@@ -217,7 +258,7 @@ def model(user_request, max_tokens=2000, temperature=0.1, model= ""):
         'User request: create a text file on desktop called hello.txt\n'
         'JSON: {"icon":"📝","request_name":"Create Text File","response":"Creating a text file on the desktop.","code":"import os\\nimport subprocess\\nfile_path = os.path.expanduser(\\"~/Desktop/hello.txt\\")\\nwith open(file_path, \\"w\\") as f:\\n    f.write(\\"Hello World\\")\\nsubprocess.Popen([\\"notepad.exe\\", file_path])","risk":"Low"}\n\n'
     )
-
+    history_text = "\n".join(ConvoHistory[-5:])
     prompt = (
         f"System: {SYSTEM}\n"
         f"IMPORTANT USER INSTRUCTIONS:{Settings[0]["ExtraPrompt"]}"
@@ -227,28 +268,58 @@ def model(user_request, max_tokens=2000, temperature=0.1, model= ""):
         "Assistant JSON:\n"
     )
 
+    if Settings[0]["Cloud"]:
+        print("Using Gemini cloud model")
 
-    response = requests.post(
-        URL,
-        json={
-            "model": model,
-            "prompt": prompt,
-            "stream": False,
-            "format": "json",
-            "options": {
-                "num_predict": max_tokens,
-                "temperature": temperature
-            }
-        },
-        timeout=60
-    )
+        def generateurl():
 
-    response.raise_for_status()
+            url = Settings[0]["CloudURL"] + Settings[0]["CloudModel"]
+            url = url.replace(' ','-')
+            url = url.lower()
+            url += ":generateContent"
 
-    raw = response.json().get("response", "")
-    result = extract_json(raw)
+            return url
 
-    #History.append(f"User: {user_request}"
+
+
+        raw = ask_gemini_json(
+            prompt=prompt,
+            api_key=Settings[0]["CloudAPIKey"],
+            cloud_url=generateurl(),
+            max_tokens=max_tokens,
+            temperature=temperature
+        )
+
+
+
+        result = extract_json(raw)
+
+    else:
+
+        URL = "http://localhost:11434/api/generate"
+
+        response = requests.post(
+            URL,
+            json={
+                "model": model,
+                "prompt": prompt,
+                "stream": False,
+                "format": "json",
+                "options": {
+                    "num_predict": max_tokens,
+                    "temperature": temperature
+                }
+            },
+            timeout=60
+        )
+
+        response.raise_for_status()
+
+        raw = response.json().get("response", "")
+        result = extract_json(raw)
+
+        #History.append(f"User: {user_request}"
+
     try:
         i = f"{int(History[-1]["ID"])+1}"
     except:
@@ -267,10 +338,6 @@ def model(user_request, max_tokens=2000, temperature=0.1, model= ""):
     })
 
     ConvoHistory.append(f"User: {user_request}\nAssistant: {result['response']}\nAssistant Provided Code: {result['code']}\n")
-
-
-
-
 
 
     return {
@@ -329,10 +396,16 @@ def get_metadata(user_request, max_tokens=500, temperature=0.1, model=""):
 
     prompt = (
         f"System: {SYSTEM}\n"
-        f"IMPORTANT USER INSTRUCTIONS:{Settings[0]["ExtraPrompt"]}"
+        f"IMPORTANT USER INSTRUCTIONS:\n{Settings[0].get('ExtraPrompt', '')}\n\n"
         f"Recent history:\n{history_text}\n\n"
         f"Current Code:\n{getCodeSpace()}\n\n"
-        f"User request: {user_request}\n"
+        f"User request: {user_request}\n\n"
+        "FINAL OUTPUT RULES:\n"
+        "Return ONLY raw JSON.\n"
+        "No markdown.\n"
+        "No ```json.\n"
+        "No backticks.\n"
+        "The code field must be a JSON string containing Python code.\n"
         "Assistant JSON:\n"
     )
 
@@ -383,6 +456,7 @@ def get_code_stream(user_request, max_tokens=2000, temperature=0.1, model="", on
         "- Do NOT explain anything.\n"
         "- Do NOT write text before or after the code.\n"
         "- The output must be directly executable with exec(code).\n\n"
+        
 
         "CODE RULES:\n"
         "- Include all required imports.\n"
@@ -583,9 +657,11 @@ def main():
                     CodeBox.Saved_ID = item["ID"]
 
     def saved_button(parent, name, saved_id, icon):
+
+        icon = icon.replace("\ufe0f", "") #removes weird spacing in icons
         btn = CTkButton(
             parent,
-            text=f"{icon}  {name}",
+            text=f"{icon}   {name}",
             width=188,
             height=38,
             fg_color="#111a2e",
@@ -739,7 +815,23 @@ def main():
         thread.start()
 
     def run_model_thread(user_text, Stream):
-        if Settings[0]["Stream"]:
+        #local or cloud
+        if Settings[0]["Stream"] is False or Settings[0]["Cloud"]:
+            try:
+                result = model(user_text, int(maxTokensEntry.get()), float(temperatureEntry.get()), ModelMenu.get())
+
+                root.after(0, lambda: show_model_result(result))
+
+            except Exception as e:
+
+                error_text = str(e)
+
+                root.after(0, lambda: insert_to_ChatBox(f"bot: Model error, {error_text}\n"))
+
+                root.after(0, lambda: show_model_error(error_text))
+        #with stream
+        else:
+
             try:
                 stream_buffer["text"] = ""
 
@@ -764,20 +856,12 @@ def main():
             except Exception as e:
                 root.after(0, lambda: insert_to_ChatBox(f"bot: Model error, {e}\n"))
                 root.after(0, lambda: show_model_error(e))
+
+    def chat_type_label_update():
+        if Settings[0]["Cloud"]:
+            chatTypeLabel.configure(text="Cloud")
         else:
-            try:
-                result = model(user_text, int(maxTokensEntry.get()), float(temperatureEntry.get()), ModelMenu.get())
-
-                root.after(0, lambda: show_model_result(result))
-
-            except Exception as e:
-                try:
-                    insert_to_ChatBox(f"bot: Model error, {e}\n")
-                    root.after(0, lambda: show_model_error(e))
-
-                except:
-                    insert_to_ChatBox(f"bot: Model error")
-                    root.after(0, lambda: show_model_error("ERROR"))
+            chatTypeLabel.configure(text="Local")
 
     def execute_command():
 
@@ -832,9 +916,12 @@ def main():
         #print(History[-1]["ID"])
         history_button(HistoryBox, result["request_name"],History[-1]["ID"])
 
-
         status.configure(text="●  Status:  Running", text_color="#22c55e")
         send_btn.configure(state="normal")
+
+        if autorunCheckbox.get():
+            if result["risk"] == "Low":
+                execute_command()
 
     def show_model_error(error):
         print("Model error:", error)
@@ -889,18 +976,23 @@ def main():
             setting = {
                 "Stream": bool(StreamingCheckBox.get()),
                 "MetadataModel": MetadataModelEntry.get().strip(),
-                "ExtraPrompt": ExtraPromptEntry.get("1.0", "end-1c").strip()
+                "ExtraPrompt": ExtraPromptEntry.get("1.0", "end-1c").strip(),
+                "Cloud":bool(CloudCheckBox.get()),
+                "CloudURL":CloudUrlEntry.get().strip(),
+                "CloudAPIKey":CloudApiKeyEntry.get().strip(),
+                "CloudModel":CloudModelEntry.get().strip()
             }
 
             Settings[0] = setting
             update_saved()
+            chat_type_label_update()
 
             print(Settings)
             settings_window.destroy()
 
         settings_window = CTkToplevel(root)
         settings_window.title("Settings")
-        settings_window.geometry("420x800")
+        settings_window.geometry("420x1000")
         settings_window.configure(fg_color="#080d18")
         settings_window.resizable(False, False)
         settings_window.transient(root)
@@ -913,7 +1005,7 @@ def main():
 
         CTkLabel(HeaderFrame, text="⚙  Settings", text_color="#e5e7eb", font=("Segoe UI", 18, "bold")).place(x=18, y=12)
 
-        MainFrame = CTkFrame(settings_window, fg_color="#0d1424", width=380, height=710, border_width=1,
+        MainFrame = CTkFrame(settings_window, fg_color="#0d1424", width=380, height=910, border_width=1,
                              border_color="#26324a", corner_radius=12)
         MainFrame.place(x=20, y=70)
 
@@ -922,12 +1014,12 @@ def main():
         SaveBtn = CTkButton(MainFrame, text="Save", width=120, height=36, fg_color="#6d28d9", hover_color="#7c3aed",
                             border_width=1, border_color="#8b5cf6", text_color="white", font=("Segoe UI", 13, "bold"),
                             corner_radius=8, command=save_settings)
-        SaveBtn.place(x=110, y=660)
+        SaveBtn.place(x=110, y=860)
 
         CloseBtn = CTkButton(MainFrame, text="Close", width=120, height=36, fg_color="#111827", hover_color="#1e1b4b",
                              border_width=1, border_color="#26324a", text_color="#ddd6fe",
                              font=("Segoe UI", 13, "bold"), corner_radius=8, command=settings_window.destroy)
-        CloseBtn.place(x=240, y=660)
+        CloseBtn.place(x=240, y=860)
 
         # STREAMING CHECKBOX
         StreamingCheckBox = CTkCheckBox(MainFrame, text="Code Streaming", width=340, height=32, fg_color="#6d28d9",
@@ -970,15 +1062,69 @@ def main():
                  text="Optional instructions added to the code generation prompt.\nExample: always use short variable names, avoid comments, etc.",
                  width=330, text_color="#64748b", font=("Segoe UI", 11), justify="left", anchor="w").place(x=18, y=405)
 
+        #CLOUD BOT
 
+        CloudCheckBox = CTkCheckBox(MainFrame, text="Use Cloud Model", width=340, height=32, fg_color="#6d28d9",
+                                    hover_color="#7c3aed", border_color="#26324a", checkmark_color="#ffffff",
+                                    text_color="#e5e7eb", font=("Segoe UI", 13, "bold"), corner_radius=6)
+        CloudCheckBox.place(x=18, y=455)
+        if Settings[0]["Cloud"]:
+            CloudCheckBox.select()
 
+        CTkLabel(MainFrame,
+                 text="Uses an online model instead of your selected local Ollama models.\nRequires internet and may be slower, Google AI.",
+                 width=340, text_color="#64748b", font=("Segoe UI", 11), justify="left", anchor="w").place(x=18, y=490)
 
-        # MetadataModelEntry = CTkEntry(MainFrame, width=340, height=38, fg_color="#0f172a", border_color="#26324a",
-        #                               border_width=1, corner_radius=8, text_color="#e5e7eb", font=("Segoe UI", 13))
-        # MetadataModelEntry.place(x=18, y=85)
+        # CLOUD API URL
+        CTkLabel(MainFrame, text="Cloud API URL", text_color="#94a3b8", font=("Segoe UI", 12, "bold")).place(x=18,
+                                                                                                             y=535)
 
+        CloudUrlEntry = CTkEntry(MainFrame, width=330, height=38, fg_color="#0f172a", border_color="#26324a",
+                                 border_width=1, corner_radius=8, text_color="#e5e7eb", font=("Segoe UI", 13))
+        CloudUrlEntry.place(x=18, y=560)
+        CloudUrlEntry.insert(0, Settings[0]["CloudURL"])
 
-        #MetadataModelEntry.insert(0, "qwen2.5:1.5b")
+        CTkLabel(MainFrame, text="Endpoint used when cloud mode is enabled.", width=330, text_color="#64748b",
+                 font=("Segoe UI", 11), justify="left", anchor="w").place(x=18, y=603)
+
+        # CLOUD API KEY
+        CTkLabel(MainFrame, text="Cloud API Key", text_color="#94a3b8", font=("Segoe UI", 12, "bold")).place(x=18,
+                                                                                                             y=630)
+
+        CloudApiKeyEntry = CTkEntry(MainFrame, width=330, height=38, fg_color="#0f172a", border_color="#26324a",
+                                    border_width=1, corner_radius=8, text_color="#e5e7eb", font=("Segoe UI", 13),
+                                    show="*")
+        CloudApiKeyEntry.place(x=18, y=655)
+        CloudApiKeyEntry.insert(0, Settings[0]["CloudAPIKey"])
+
+        CTkLabel(MainFrame, text="Stored locally in settings.json. Keep this private.", width=330, text_color="#64748b",
+                 font=("Segoe UI", 11), justify="left", anchor="w").place(x=18, y=698)
+
+        # CLOUD MODEL ENTRY
+        CTkLabel(MainFrame, text="Cloud Model", text_color="#94a3b8", font=("Segoe UI", 12, "bold")).place(x=18, y=735)
+
+        CloudModelEntry = CTkOptionMenu(MainFrame, width=330, height=44, fg_color="#0f172a", button_color="#0f172a",
+                                        button_hover_color="#1e1b4b", dropdown_fg_color="#0f172a",
+                                        dropdown_hover_color="#1e1b4b", text_color="#e5e7eb",
+                                        dropdown_text_color="#e5e7eb", font=("Segoe UI", 14),
+                                        dropdown_font=("Segoe UI", 13), corner_radius=6)
+
+        CloudModelEntry.place(x=18, y=760)
+        CloudModelEntry.configure(values=[
+            "Gemini 3 Flash Live",
+            "Gemma 3 1B IT",
+            "Gemma 3 2B IT",
+            "Gemma 3 4B IT",
+            "Gemma 3 12B IT",
+            "Gemma 3 27B IT",
+            "Gemma 4 31B IT",
+            "Gemini 3.1 Flash Lite preview",
+        ])
+        CloudModelEntry.set(Settings[0]["CloudModel"])
+
+        CTkLabel(MainFrame,
+                 text="Online model used when Cloud Mode is enabled.\nGemma models have a much higher free request limits.",
+                 width=340, text_color="#64748b", font=("Segoe UI", 11), justify="left", anchor="w").place(x=18, y=803)
 
 
 
@@ -986,7 +1132,8 @@ def main():
 
     root = CTk()
     root.geometry("1130x680")
-    root.configure(fg_color="#080d18")  # main app background
+    root.configure(fg_color="#080d18")
+    root.resizable(False, False)
 
 
 
@@ -1122,7 +1269,6 @@ def main():
     )
     ChatTitle.place(x=18, y=12)
 
-
     ChatBox = CTkTextbox(
         ChatFrame,
         width=400,
@@ -1144,7 +1290,9 @@ def main():
     ChatBox.tag_config("time", foreground="#94a3b8")
     ChatBox.configure(state="disabled")
 
-
+    chatTypeLabel = CTkLabel(ChatFrame, text="Local",text_color="#94a3b8",font=("Segoe UI", 11))
+    chatTypeLabel.place(x=100,y=15)
+    chat_type_label_update()
 
 
 
@@ -1171,6 +1319,11 @@ def main():
                             border_width=1, border_color="#26324a", text_color="#ddd6fe", font=("Segoe UI", 12),
                             corner_radius=8,command=lambda: pyperclip.copy(CodeBox.get("1.0", "end-1c")))
     CopyCodeBtn.place(x=320,y=10)
+
+    autorunCheckbox = CTkCheckBox(CodeFrame, text="Auto-run", width=95, height=24, fg_color="#6d28d9",
+                                  hover_color="#7c3aed", border_color="#26324a", checkmark_color="#ffffff",
+                                  text_color="#ddd6fe", font=("Segoe UI", 11, "bold"), corner_radius=5)
+    autorunCheckbox.place(x=225, y=15)
 
     CodeBox = CTkTextbox(CodeFrame, width=400, height=230, fg_color="#0b1220", border_width=1, border_color="#26324a",
                          corner_radius=10, text_color="#e5e7eb", font=("Consolas", 12),
@@ -1306,6 +1459,8 @@ def main():
 
     ModelMenu.place(x=760, y=62)
     ModelMenu.configure(values= get_ollama_models())
+    CTkLabel(root,text="Local Model: ",text_color="#94a3b8", font=("Segoe UI", 16, "bold")).place(x=650, y=70)
+
 
 
     ModelMenu.set("qwen3:8b")
