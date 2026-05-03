@@ -1388,6 +1388,7 @@ def main():
     root.geometry("1130x680")
     root.configure(fg_color="#080d18")
     root.resizable(False, False)
+    root.title("AI Desktop Partner")
 
 
 
@@ -1404,7 +1405,7 @@ def main():
     )
     HeaderFrame.place(y=0, x=0)
 
-    CTkLabel(HeaderFrame,text="BOT HELPER",font= ('bold', 18,'bold')).place(x=10, y=10)
+    CTkLabel(HeaderFrame,text="AI Desktop Partner",font= ('bold', 18,'bold')).place(x=10, y=10)
 
     SavedFrame = CTkFrame(root, fg_color="#0d1424", width=250, height=630, border_width=1, border_color="#26324a",
                           corner_radius=0)
