@@ -75,7 +75,7 @@ Currently Supporting: https://aistudio.google.com
 ```
 ### 2. Clone the repository
 ```powershell 
-       git clone https://github.com/EdionI/DESKTOPBOT.git
+       git clone https://github.com/EdionI/Desktop_AI_Assistant.git
        cd DESKTOPBOT
 ```
 ### 3. Install required python libraries: 
