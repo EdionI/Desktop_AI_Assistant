@@ -34,13 +34,60 @@ The application includes a graphical interface where the user can type a command
 - Subprocess
 - Pyperclip
 - Regular Expressions
+  
+## Requirements
+
+Before running the project, make sure you have:
+
+- Python 3.10 or newer
+- Ollama installed, if you want to use local models
+- At least one local Ollama model downloaded
+- Internet connection, if you want to use cloud models
+
+## Cloud Model Mode
+The application also supports cloud-based AI models through Google AI API.
+
+To use cloud mode, open the settings window and enter:
+
+Cloud API URL
+Cloud API Key
+Cloud Model Name
+
+Cloud mode requires an internet connection and a valid API key.
+
+Currently Supporting: https://aistudio.google.com
+
 
 ## Installation
-### 1. Make sure you have ollama installed with atleast 1 model downloaded.
+### 1. Make sure you have ollama installed with atleast 1 model downloaded. https://ollama.com
+```powershell
+       #install ollama
+       irm https://ollama.com/install.ps1 | iex
+       
+       #check version
+       ollama --version 
+       
+       #download llama3.2 3B model
+       ollama pull llama3.2:3b
+       
+       #see installed models
+       ollama list
+```
 ### 2. Clone the repository
+```powershell 
+       git clone https://github.com/EdionI/DESKTOPBOT.git
+       cd DESKTOPBOT
+```
 ### 3. Install required python libraries: 
-       required: pip install customtkinter requests pyperclip
-       extras: pip install pyautogui pygetwindow keyboard mouse psutil pillow opencv-python selenium
+```powershell
+       #required
+       pip install customtkinter requests pyperclip
+       #extras
+       pip install pyautogui pygetwindow keyboard mouse psutil pillow opencv-python selenium
+```
 ### 4. run main.py
+```powershell 
+       python main.py
+```
 
 
