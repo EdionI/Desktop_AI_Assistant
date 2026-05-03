@@ -969,18 +969,20 @@ def main():
 
         root.after(0, update_box)
 
+
     def open_settings_window():
         global Settings
+
         def save_settings():
             global Settings
             setting = {
                 "Stream": bool(StreamingCheckBox.get()),
                 "MetadataModel": MetadataModelEntry.get().strip(),
                 "ExtraPrompt": ExtraPromptEntry.get("1.0", "end-1c").strip(),
-                "Cloud":bool(CloudCheckBox.get()),
-                "CloudURL":CloudUrlEntry.get().strip(),
-                "CloudAPIKey":CloudApiKeyEntry.get().strip(),
-                "CloudModel":CloudModelEntry.get().strip()
+                "Cloud": bool(CloudCheckBox.get()),
+                "CloudURL": CloudUrlEntry.get().strip(),
+                "CloudAPIKey": CloudApiKeyEntry.get().strip(),
+                "CloudModel": CloudModelEntry.get().strip()
             }
 
             Settings[0] = setting
@@ -992,124 +994,294 @@ def main():
 
         settings_window = CTkToplevel(root)
         settings_window.title("Settings")
-        settings_window.geometry("420x1000")
+        settings_window.geometry("420x620")
         settings_window.configure(fg_color="#080d18")
-        settings_window.resizable(False, False)
+        # settings_window.resizable(False, False)
         settings_window.transient(root)
         settings_window.grab_set()
         settings_window.focus()
 
-        HeaderFrame = CTkFrame(settings_window, fg_color="#090f1d", width=420, height=50, border_width=1,
-                               border_color="#26324a", corner_radius=0)
+        HeaderFrame = CTkFrame(
+            settings_window,
+            fg_color="#090f1d",
+            width=420,
+            height=50,
+            border_width=1,
+            border_color="#26324a",
+            corner_radius=0
+        )
         HeaderFrame.place(x=0, y=0)
 
-        CTkLabel(HeaderFrame, text="⚙  Settings", text_color="#e5e7eb", font=("Segoe UI", 18, "bold")).place(x=18, y=12)
+        CTkLabel(
+            HeaderFrame,
+            text="⚙  Settings",
+            text_color="#e5e7eb",
+            font=("Segoe UI", 18, "bold")
+        ).place(x=18, y=12)
 
-        MainFrame = CTkFrame(settings_window, fg_color="#0d1424", width=380, height=910, border_width=1,
-                             border_color="#26324a", corner_radius=12)
+        MainFrame = CTkScrollableFrame(
+            settings_window,
+            fg_color="#0d1424",
+            width=360,
+            height=455,
+            border_width=1,
+            border_color="#26324a",
+            corner_radius=12
+        )
         MainFrame.place(x=20, y=70)
 
-        CTkLabel(MainFrame, text="General Settings", text_color="#c084fc", font=("Segoe UI", 16, "bold")).place(x=18,y=18)
+        MainFrame.grid_columnconfigure(0, weight=1)
 
-        SaveBtn = CTkButton(MainFrame, text="Save", width=120, height=36, fg_color="#6d28d9", hover_color="#7c3aed",
-                            border_width=1, border_color="#8b5cf6", text_color="white", font=("Segoe UI", 13, "bold"),
-                            corner_radius=8, command=save_settings)
-        SaveBtn.place(x=110, y=860)
+        row = 0
 
-        CloseBtn = CTkButton(MainFrame, text="Close", width=120, height=36, fg_color="#111827", hover_color="#1e1b4b",
-                             border_width=1, border_color="#26324a", text_color="#ddd6fe",
-                             font=("Segoe UI", 13, "bold"), corner_radius=8, command=settings_window.destroy)
-        CloseBtn.place(x=240, y=860)
+        CTkLabel(
+            MainFrame,
+            text="General Settings",
+            text_color="#c084fc",
+            font=("Segoe UI", 16, "bold")
+        ).grid(row=row, column=0, padx=12, pady=(18, 22), sticky="w")
+        row += 1
 
         # STREAMING CHECKBOX
-        StreamingCheckBox = CTkCheckBox(MainFrame, text="Code Streaming", width=340, height=32, fg_color="#6d28d9",
-                                        hover_color="#7c3aed", border_color="#26324a", checkmark_color="#ffffff",
-                                        text_color="#e5e7eb", font=("Segoe UI", 13, "bold"), corner_radius=6)
-        StreamingCheckBox.place(x=18, y=70)
+        StreamingCheckBox = CTkCheckBox(
+            MainFrame,
+            text="Code Streaming",
+            width=330,
+            height=32,
+            fg_color="#6d28d9",
+            hover_color="#7c3aed",
+            border_color="#26324a",
+            checkmark_color="#ffffff",
+            text_color="#e5e7eb",
+            font=("Segoe UI", 13, "bold"),
+            corner_radius=6
+        )
+        StreamingCheckBox.grid(row=row, column=0, padx=12, pady=(0, 8), sticky="w")
+        row += 1
+
         if Settings[0]["Stream"]:
             StreamingCheckBox.select()
 
-        CTkLabel(MainFrame,
-                 text="Streams generated code live into the CodeBox.\nDisable this if you only want final code after generation.\nMuch slower but looks cooler!",
-                 width=340, text_color="#64748b", font=("Segoe UI", 11), justify="left", anchor="w").place(x=18, y=110)
+        CTkLabel(
+            MainFrame,
+            text="Streams generated code live into the CodeBox.\nDisable this if you only want final code after generation.\nMuch slower but looks cooler!",
+            width=330,
+            text_color="#64748b",
+            font=("Segoe UI", 11),
+            justify="left",
+            anchor="w"
+        ).grid(row=row, column=0, padx=12, pady=(0, 22), sticky="w")
+        row += 1
 
-        #METADATA Entry
-        CTkLabel(MainFrame, text="Metadata Model", text_color="#94a3b8", font=("Segoe UI", 12, "bold")).place(x=18,y=170)
+        # METADATA ENTRY
+        CTkLabel(
+            MainFrame,
+            text="Metadata Model",
+            text_color="#94a3b8",
+            font=("Segoe UI", 12, "bold")
+        ).grid(row=row, column=0, padx=12, pady=(0, 6), sticky="w")
+        row += 1
 
-        MetadataModelEntry = CTkOptionMenu(MainFrame, width=330, height=44, fg_color="#0f172a", button_color="#0f172a",
-            button_hover_color="#1e1b4b", dropdown_fg_color="#0f172a", dropdown_hover_color="#1e1b4b",
-            text_color="#e5e7eb", dropdown_text_color="#e5e7eb", font=("Segoe UI", 14), dropdown_font=("Segoe UI", 13),
-            corner_radius=6)
+        MetadataModelEntry = CTkOptionMenu(
+            MainFrame,
+            width=320,
+            height=44,
+            fg_color="#0f172a",
+            button_color="#0f172a",
+            button_hover_color="#1e1b4b",
+            dropdown_fg_color="#0f172a",
+            dropdown_hover_color="#1e1b4b",
+            text_color="#e5e7eb",
+            dropdown_text_color="#e5e7eb",
+            font=("Segoe UI", 14),
+            dropdown_font=("Segoe UI", 13),
+            corner_radius=6
+        )
+        MetadataModelEntry.grid(row=row, column=0, padx=12, pady=(0, 8), sticky="w")
+        row += 1
 
-        MetadataModelEntry.place(x=18, y=195)
         MetadataModelEntry.configure(values=get_ollama_models())
         MetadataModelEntry.set(Settings[0]["MetadataModel"])
-        CTkLabel(MainFrame, text="Small model used for title, icon, response and risk.\n"
-                                 "Only relevant when streaming is Enabled.", text_color="#64748b",
-                 font=("Segoe UI", 11),justify="left",anchor="w").place(x=18, y=238)
+
+        CTkLabel(
+            MainFrame,
+            text="Small model used for title, icon, response and risk.\nOnly relevant when streaming is Enabled.",
+            width=330,
+            text_color="#64748b",
+            font=("Segoe UI", 11),
+            justify="left",
+            anchor="w"
+        ).grid(row=row, column=0, padx=12, pady=(0, 22), sticky="w")
+        row += 1
 
         # EXTRA PROMPT
-        CTkLabel(MainFrame, text="Extra Prompt", text_color="#94a3b8", font=("Segoe UI", 12, "bold")).place(x=18, y=285)
+        CTkLabel(
+            MainFrame,
+            text="Extra Prompt",
+            text_color="#94a3b8",
+            font=("Segoe UI", 12, "bold")
+        ).grid(row=row, column=0, padx=12, pady=(0, 6), sticky="w")
+        row += 1
 
-        ExtraPromptEntry = CTkTextbox(MainFrame, width=330, height=90, fg_color="#0f172a", border_color="#26324a",
-                                      border_width=1, corner_radius=8, text_color="#e5e7eb", font=("Segoe UI", 13),
-                                      wrap="word")
-        ExtraPromptEntry.place(x=18, y=310)
+        ExtraPromptEntry = CTkTextbox(
+            MainFrame,
+            width=320,
+            height=90,
+            fg_color="#0f172a",
+            border_color="#26324a",
+            border_width=1,
+            corner_radius=8,
+            text_color="#e5e7eb",
+            font=("Segoe UI", 13),
+            wrap="word"
+        )
+        ExtraPromptEntry.grid(row=row, column=0, padx=12, pady=(0, 8), sticky="w")
+        row += 1
 
         ExtraPromptEntry.insert("1.0", Settings[0]["ExtraPrompt"])
 
-        CTkLabel(MainFrame,
-                 text="Optional instructions added to the code generation prompt.\nExample: always use short variable names, avoid comments, etc.",
-                 width=330, text_color="#64748b", font=("Segoe UI", 11), justify="left", anchor="w").place(x=18, y=405)
+        CTkLabel(
+            MainFrame,
+            text="Optional instructions added to the code generation prompt.\nExample: always use short variable names, avoid comments, etc.",
+            width=320,
+            text_color="#64748b",
+            font=("Segoe UI", 11),
+            justify="left",
+            anchor="w"
+        ).grid(row=row, column=0, padx=12, pady=(0, 22), sticky="w")
+        row += 1
 
-        #CLOUD BOT
+        # CLOUD BOT
+        CloudCheckBox = CTkCheckBox(
+            MainFrame,
+            text="Use Cloud Model",
+            width=330,
+            height=32,
+            fg_color="#6d28d9",
+            hover_color="#7c3aed",
+            border_color="#26324a",
+            checkmark_color="#ffffff",
+            text_color="#e5e7eb",
+            font=("Segoe UI", 13, "bold"),
+            corner_radius=6
+        )
+        CloudCheckBox.grid(row=row, column=0, padx=12, pady=(0, 8), sticky="w")
+        row += 1
 
-        CloudCheckBox = CTkCheckBox(MainFrame, text="Use Cloud Model", width=340, height=32, fg_color="#6d28d9",
-                                    hover_color="#7c3aed", border_color="#26324a", checkmark_color="#ffffff",
-                                    text_color="#e5e7eb", font=("Segoe UI", 13, "bold"), corner_radius=6)
-        CloudCheckBox.place(x=18, y=455)
         if Settings[0]["Cloud"]:
             CloudCheckBox.select()
 
-        CTkLabel(MainFrame,
-                 text="Uses an online model instead of your selected local Ollama models.\nRequires internet and may be slower, Google AI.",
-                 width=340, text_color="#64748b", font=("Segoe UI", 11), justify="left", anchor="w").place(x=18, y=490)
+        CTkLabel(
+            MainFrame,
+            text="Uses an online model instead of your selected local Ollama models.\nRequires internet and may be slower, Google AI.",
+            width=330,
+            text_color="#64748b",
+            font=("Segoe UI", 11),
+            justify="left",
+            anchor="w"
+        ).grid(row=row, column=0, padx=12, pady=(0, 22), sticky="w")
+        row += 1
 
         # CLOUD API URL
-        CTkLabel(MainFrame, text="Cloud API URL", text_color="#94a3b8", font=("Segoe UI", 12, "bold")).place(x=18,
-                                                                                                             y=535)
+        CTkLabel(
+            MainFrame,
+            text="Cloud API URL",
+            text_color="#94a3b8",
+            font=("Segoe UI", 12, "bold")
+        ).grid(row=row, column=0, padx=12, pady=(0, 6), sticky="w")
+        row += 1
 
-        CloudUrlEntry = CTkEntry(MainFrame, width=330, height=38, fg_color="#0f172a", border_color="#26324a",
-                                 border_width=1, corner_radius=8, text_color="#e5e7eb", font=("Segoe UI", 13))
-        CloudUrlEntry.place(x=18, y=560)
+        CloudUrlEntry = CTkEntry(
+            MainFrame,
+            width=320,
+            height=38,
+            fg_color="#0f172a",
+            border_color="#26324a",
+            border_width=1,
+            corner_radius=8,
+            text_color="#e5e7eb",
+            font=("Segoe UI", 13)
+        )
+        CloudUrlEntry.grid(row=row, column=0, padx=12, pady=(0, 8), sticky="w")
+        row += 1
+
         CloudUrlEntry.insert(0, Settings[0]["CloudURL"])
 
-        CTkLabel(MainFrame, text="Endpoint used when cloud mode is enabled.", width=330, text_color="#64748b",
-                 font=("Segoe UI", 11), justify="left", anchor="w").place(x=18, y=603)
+        CTkLabel(
+            MainFrame,
+            text="Endpoint used when cloud mode is enabled.",
+            width=320,
+            text_color="#64748b",
+            font=("Segoe UI", 11),
+            justify="left",
+            anchor="w"
+        ).grid(row=row, column=0, padx=12, pady=(0, 22), sticky="w")
+        row += 1
 
         # CLOUD API KEY
-        CTkLabel(MainFrame, text="Cloud API Key", text_color="#94a3b8", font=("Segoe UI", 12, "bold")).place(x=18,
-                                                                                                             y=630)
+        CTkLabel(
+            MainFrame,
+            text="Cloud API Key",
+            text_color="#94a3b8",
+            font=("Segoe UI", 12, "bold")
+        ).grid(row=row, column=0, padx=12, pady=(0, 6), sticky="w")
+        row += 1
 
-        CloudApiKeyEntry = CTkEntry(MainFrame, width=330, height=38, fg_color="#0f172a", border_color="#26324a",
-                                    border_width=1, corner_radius=8, text_color="#e5e7eb", font=("Segoe UI", 13),
-                                    show="*")
-        CloudApiKeyEntry.place(x=18, y=655)
+        CloudApiKeyEntry = CTkEntry(
+            MainFrame,
+            width=320,
+            height=38,
+            fg_color="#0f172a",
+            border_color="#26324a",
+            border_width=1,
+            corner_radius=8,
+            text_color="#e5e7eb",
+            font=("Segoe UI", 13),
+            show="*"
+        )
+        CloudApiKeyEntry.grid(row=row, column=0, padx=12, pady=(0, 8), sticky="w")
+        row += 1
+
         CloudApiKeyEntry.insert(0, Settings[0]["CloudAPIKey"])
 
-        CTkLabel(MainFrame, text="Stored locally in settings.json. Keep this private.", width=330, text_color="#64748b",
-                 font=("Segoe UI", 11), justify="left", anchor="w").place(x=18, y=698)
+        CTkLabel(
+            MainFrame,
+            text="Stored locally in settings.json. Keep this private.",
+            width=320,
+            text_color="#64748b",
+            font=("Segoe UI", 11),
+            justify="left",
+            anchor="w"
+        ).grid(row=row, column=0, padx=12, pady=(0, 22), sticky="w")
+        row += 1
 
         # CLOUD MODEL ENTRY
-        CTkLabel(MainFrame, text="Cloud Model", text_color="#94a3b8", font=("Segoe UI", 12, "bold")).place(x=18, y=735)
+        CTkLabel(
+            MainFrame,
+            text="Cloud Model",
+            text_color="#94a3b8",
+            font=("Segoe UI", 12, "bold")
+        ).grid(row=row, column=0, padx=12, pady=(0, 6), sticky="w")
+        row += 1
 
-        CloudModelEntry = CTkOptionMenu(MainFrame, width=330, height=44, fg_color="#0f172a", button_color="#0f172a",
-                                        button_hover_color="#1e1b4b", dropdown_fg_color="#0f172a",
-                                        dropdown_hover_color="#1e1b4b", text_color="#e5e7eb",
-                                        dropdown_text_color="#e5e7eb", font=("Segoe UI", 14),
-                                        dropdown_font=("Segoe UI", 13), corner_radius=6)
+        CloudModelEntry = CTkOptionMenu(
+            MainFrame,
+            width=320,
+            height=44,
+            fg_color="#0f172a",
+            button_color="#0f172a",
+            button_hover_color="#1e1b4b",
+            dropdown_fg_color="#0f172a",
+            dropdown_hover_color="#1e1b4b",
+            text_color="#e5e7eb",
+            dropdown_text_color="#e5e7eb",
+            font=("Segoe UI", 14),
+            dropdown_font=("Segoe UI", 13),
+            corner_radius=6
+        )
+        CloudModelEntry.grid(row=row, column=0, padx=12, pady=(0, 8), sticky="w")
+        row += 1
 
-        CloudModelEntry.place(x=18, y=760)
         CloudModelEntry.configure(values=[
             "Gemini 3 Flash Live",
             "Gemma 3 1B IT",
@@ -1122,12 +1294,58 @@ def main():
         ])
         CloudModelEntry.set(Settings[0]["CloudModel"])
 
-        CTkLabel(MainFrame,
-                 text="Online model used when Cloud Mode is enabled.\nGemma models have a much higher free request limits.",
-                 width=340, text_color="#64748b", font=("Segoe UI", 11), justify="left", anchor="w").place(x=18, y=803)
+        CTkLabel(
+            MainFrame,
+            text="Online model used when Cloud Mode is enabled.\nGemma models have a much higher free request limits.",
+            width=330,
+            text_color="#64748b",
+            font=("Segoe UI", 11),
+            justify="left",
+            anchor="w"
+        ).grid(row=row, column=0, padx=12, pady=(0, 24), sticky="w")
+        row += 1
 
+        # FIXED BOTTOM BUTTONS - OUTSIDE SCROLL
+        BottomFrame = CTkFrame(
+            settings_window,
+            fg_color="#080d18",
+            width=380,
+            height=40,
+            corner_radius=0
+        )
+        BottomFrame.place(x=35, y=568)
 
+        SaveBtn = CTkButton(
+            BottomFrame,
+            text="Save",
+            width=120,
+            height=36,
+            fg_color="#6d28d9",
+            hover_color="#7c3aed",
+            border_width=1,
+            border_color="#8b5cf6",
+            text_color="white",
+            font=("Segoe UI", 13, "bold"),
+            corner_radius=8,
+            command=save_settings
+        )
+        SaveBtn.place(x=110, y=0)
 
+        CloseBtn = CTkButton(
+            BottomFrame,
+            text="Close",
+            width=120,
+            height=36,
+            fg_color="#111827",
+            hover_color="#1e1b4b",
+            border_width=1,
+            border_color="#26324a",
+            text_color="#ddd6fe",
+            font=("Segoe UI", 13, "bold"),
+            corner_radius=8,
+            command=settings_window.destroy
+        )
+        CloseBtn.place(x=240, y=0)
 
 
     root = CTk()
