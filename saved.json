@@ -54,15 +54,6 @@
         "icon": "\ud83e\uddfa"
     },
     {
-        "ID": "6",
-        "User": "make a popup window saying your'e gay",
-        "request_name": "Make a popup window",
-        "code": "import tkinter as tk\nroot = tk.Tk()\nlabel = tk.Label(root, text=\"your'e gay\", font=(\"Helvetica\", 24), bg=\"yellow\", fg=\"red\")\nlabel.pack(pady=20)\nbutton = tk.Button(root, text=\"Close\", command=root.destroy)\nbutton.pack(pady=10)\nroot.mainloop()",
-        "risk": "High",
-        "response": "Creating a popup window with a gay message.",
-        "icon": "\ud83c\udff3\ufe0f\u200d\ud83c\udf08"
-    },
-    {
         "ID": "7",
         "User": "now up",
         "request_name": "Now Up",

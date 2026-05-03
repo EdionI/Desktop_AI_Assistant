@@ -562,8 +562,9 @@ def main():
             for i in Saved:
                 if i["ID"] == ID:
                     Saved.remove(i)
-
+            update_saved()
             show_saved()
+
 
 
     def getButtonInfo(id,Type):
